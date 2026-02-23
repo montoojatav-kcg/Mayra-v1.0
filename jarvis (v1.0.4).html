@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>J.A.R.V.I.S — Personal AI</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:ital,wght@0,300;0,400;1,300;1,400;1,600&display=swap');
+
+  :root {
+    --blue:      #0077cc;
+    --blue-dim:  #0077cc22;
+    --blue-glow: #0077ccaa;
+    --blue-soft: #0077cc0f;
+    --cyan:      #00c8ff;
+    --cyan-dim:  #00c8ff33;
+    --cyan-glow: #00c8ffaa;
+    --red:       #cc2244;
+    --bg:        #f0f4f8;
+    --bg2:       #e4eaf2;
+    --panel:     #ffffff;
+    --border:    #b8cfe8;
+    --text:      #1a3550;
+    --text-dim:  #4a6a8a;
+    --shadow:    rgba(0,119,204,0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Exo 2', sans-serif;
+    font-style: italic;
+    font-weight: 400;
+    height: 100vh;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Subtle grid on white */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--blue-dim) 1px, transparent 1px),
+      linear-gradient(90deg, var(--blue-dim) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.5;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 8px 10px;
+  }
+
+  /* ═══ HEADER ═══ */
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-bottom: 3px solid var(--blue);
+    margin-bottom: 6px;
+    box-shadow: 0 4px 20px var(--shadow);
+    clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 100%);
+    position: relative;
+  }
+
+  .header::after {
+    content: '';
+    position: absolute;
+    bottom: -3px; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--blue), var(--cyan), var(--blue));
+    animation: shimmer 3s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0%,100% { opacity: 0.7; }
+    50%      { opacity: 1; box-shadow: 0 0 15px var(--cyan-dim); }
+  }
+
+  .logo-text {
+    flex: 1;
+  }
+
+  .logo {
+    font-family: 'Orbitron', monospace;
+    font-style: italic;
+    font-size: 1.3em;
+    font-weight: 900;
+    color: var(--blue);
+    letter-spacing: 3px;
+  }
+
+  .logo span { color: var(--red); }
+
+  .logo-sub {
+    font-size: 0.52em;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    font-style: italic;
+    margin-top: 1px;
+  }
+
+  .header-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+
+  .ctrl-btns { display: flex; gap: 5px; }
+
+  .ctrl-btn {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--blue);
+    font-family: 'Exo 2', sans-serif;
+    font-style: italic;
+    font-size: 0.6em;
+    padding: 3px 9px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+    clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
+  }
+
+  .ctrl-btn:hover, .ctrl-btn.active {
+    background: var(--blue);
+    color: white;
+    border-color: var(--blue);
+  }
+
+  .status-text {
+    font-size: 0.58em;
+    color: var(--blue-glow);
+    letter-spacing: 1px;
+    font-style: italic;
+  }
+
+  /* ══════════════════════════════
+     JARVIS CIRCULAR LOGO (SVG HUD)
+  ══════════════════════════════ */
+  .jarvis-hud-wrap {
+    position: relative;
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+
+  .jarvis-hud-wrap svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+
+  /* Outer ring slow rotate */
+  .ring-outer {
+    transform-origin: 50% 50%;
+    animation: rotateOuter 12s linear infinite;
+  }
+
+  /* Middle ring reverse */
+  .ring-mid {
+    transform-origin: 50% 50%;
+    animation: rotateMid 8s linear infinite reverse;
+  }
+
+  /* Inner ring */
+  .ring-inner {
+    transform-origin: 50% 50%;
+    animation: rotateInner 5s linear infinite;
+  }
+
+  @keyframes rotateOuter  { to { transform: rotate(360deg);  } }
+  @keyframes rotateMid    { to { transform: rotate(360deg);  } }
+  @keyframes rotateInner  { to { transform: rotate(-360deg); } }
+
+  /* Center glow pulse */
+  .center-glow {
+    animation: glowPulse 2.5s ease-in-out infinite;
+  }
+
+  @keyframes glowPulse {
+    0%,100% { opacity: 0.7; r: 11; }
+    50%      { opacity: 1;   r: 13; }
+  }
+
+  /* Speaking animation — all rings speed up + glow */
+  .speaking .ring-outer { animation-duration: 2s; }
+  .speaking .ring-mid   { animation-duration: 1.5s; }
+  .speaking .ring-inner { animation-duration: 1s; }
+  .speaking .center-glow { animation-duration: 0.4s; }
+  .speaking .hud-text   { fill: var(--cyan); filter: drop-shadow(0 0 6px var(--cyan)); }
+
+  /* ═══ WAVEFORM ═══ */
+  .waveform-bar {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 5px;
+    background: white;
+    border: 1px solid var(--border);
+    border-bottom: 2px solid var(--blue);
+    margin-bottom: 5px;
+    box-shadow: 0 2px 10px var(--shadow);
+  }
+
+  .waveform-bar.active { display: flex; }
+
+  .wave-line {
+    width: 3px;
+    background: var(--blue);
+    border-radius: 2px;
+    animation: waveDance 0.55s ease-in-out infinite;
+  }
+
+  .wave-line:nth-child(1)  { height: 7px;  animation-delay:0.00s; }
+  .wave-line:nth-child(2)  { height: 16px; animation-delay:0.08s; }
+  .wave-line:nth-child(3)  { height: 28px; animation-delay:0.14s; }
+  .wave-line:nth-child(4)  { height: 20px; animation-delay:0.18s; }
+  .wave-line:nth-child(5)  { height: 36px; animation-delay:0.10s; }
+  .wave-line:nth-child(6)  { height: 26px; animation-delay:0.22s; }
+  .wave-line:nth-child(7)  { height: 42px; animation-delay:0.05s; }
+  .wave-line:nth-child(8)  { height: 30px; animation-delay:0.28s; }
+  .wave-line:nth-child(9)  { height: 18px; animation-delay:0.14s; }
+  .wave-line:nth-child(10) { height: 10px; animation-delay:0.18s; }
+  .wave-line:nth-child(11) { height: 5px;  animation-delay:0.00s; }
+
+  @keyframes waveDance {
+    0%,100% { transform: scaleY(0.3); opacity:0.5; }
+    50%      { transform: scaleY(1);   opacity:1;   }
+  }
+
+  .wave-label {
+    font-size: 0.62em;
+    color: var(--blue);
+    letter-spacing: 2px;
+    font-style: italic;
+    margin-left: 10px;
+  }
+
+  /* ═══ CHAT AREA ═══ */
+  .chat-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    background: rgba(255,255,255,0.7);
+    border: 1px solid var(--border);
+    scroll-behavior: smooth;
+    backdrop-filter: blur(4px);
+  }
+
+  .chat-area::-webkit-scrollbar { width: 4px; }
+  .chat-area::-webkit-scrollbar-track { background: var(--bg2); }
+  .chat-area::-webkit-scrollbar-thumb { background: var(--blue); border-radius: 3px; }
+
+  /* Welcome */
+  .welcome {
+    text-align: center;
+    padding: 20px 10px;
+    opacity: 0;
+    animation: fadeUp 1s ease 0.5s forwards;
+  }
+
+  @keyframes fadeUp {
+    from { opacity:0; transform:translateY(15px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+
+  /* Big HUD logo in welcome */
+  .welcome-hud {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px;
+  }
+
+  .welcome-hud svg {
+    width: 160px;
+    height: 160px;
+    overflow: visible;
+    filter: drop-shadow(0 0 12px var(--cyan-dim));
+  }
+
+  .welcome-sub {
+    font-style: italic;
+    font-size: 0.85em;
+    color: var(--text-dim);
+    margin-top: 5px;
+  }
+
+  .divider {
+    width: 50%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--blue), transparent);
+    margin: 12px auto;
+  }
+
+  .quick-btns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    justify-content: center;
+    margin-top: 12px;
+  }
+
+  .quick-btn {
+    padding: 6px 13px;
+    background: white;
+    border: 1px solid var(--border);
+    color: var(--blue);
+    font-family: 'Exo 2', sans-serif;
+    font-style: italic;
+    font-size: 0.72em;
+    cursor: pointer;
+    transition: all 0.2s;
+    clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+    box-shadow: 0 2px 8px var(--shadow);
+  }
+
+  .quick-btn:hover {
+    background: var(--blue);
+    color: white;
+    border-color: var(--blue);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px var(--shadow);
+  }
+
+  /* Messages */
+  .message {
+    margin: 10px 0;
+    animation: slideUp 0.3s ease;
+  }
+
+  @keyframes slideUp {
+    from { opacity:0; transform:translateY(10px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+
+  .message.user      { display:flex; justify-content:flex-end; }
+  .message.assistant { display:flex; justify-content:flex-start; gap:8px; align-items:flex-start; }
+
+  /* Small jarvis icon in messages */
+  .msg-jarvis-icon {
+    width: 32px; height: 32px;
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+
+  .msg-jarvis-icon svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+
+  .bubble {
+    max-width: 80%;
+    padding: 9px 13px;
+    font-size: 0.87em;
+    line-height: 1.65;
+    font-style: italic;
+  }
+
+  .message.user .bubble {
+    background: linear-gradient(135deg, #e8f4ff, #d5eaff);
+    border: 1px solid var(--border);
+    border-right: 3px solid var(--blue);
+    color: var(--text);
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
+    box-shadow: 0 2px 10px var(--shadow);
+  }
+
+  .message.assistant .bubble {
+    background: white;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--blue);
+    color: var(--text);
+    clip-path: polygon(10px 0, 100% 0, 100% 100%, 0 100%, 0 10px);
+    box-shadow: 0 2px 10px var(--shadow);
+  }
+
+  .msg-label {
+    font-size: 0.6em;
+    color: var(--blue);
+    letter-spacing: 2px;
+    margin-bottom: 3px;
+    opacity: 0.7;
+    font-style: italic;
+  }
+
+  .bubble-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 7px;
+  }
+
+  .bubble-btn {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--blue);
+    font-family: 'Exo 2', sans-serif;
+    font-style: italic;
+    font-size: 0.6em;
+    padding: 2px 8px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.15s;
+  }
+
+  .bubble-btn:hover { background: var(--blue); color: white; border-color: var(--blue); }
+
+  /* Typing */
+  .typing { display:flex; gap:4px; align-items:center; padding:6px 0; }
+
+  .typing span {
+    width: 7px; height: 7px;
+    background: var(--blue);
+    border-radius: 50%;
+    animation: typeBounce 0.9s ease-in-out infinite;
+  }
+
+  .typing span:nth-child(2) { animation-delay:0.2s; }
+  .typing span:nth-child(3) { animation-delay:0.4s; }
+
+  @keyframes typeBounce {
+    0%,100% { transform:translateY(0);    opacity:0.4; }
+    50%      { transform:translateY(-6px); opacity:1;   }
+  }
+
+  /* ═══ INPUT AREA ═══ */
+  .input-area { padding: 5px 0 2px; }
+
+  .input-wrapper {
+    display: flex;
+    gap: 7px;
+    align-items: center;
+    background: white;
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--blue);
+    padding: 7px 12px;
+    box-shadow: 0 -2px 15px var(--shadow);
+    clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 0 100%);
+  }
+
+  .input-prefix {
+    color: var(--blue);
+    font-family: 'Orbitron', monospace;
+    font-style: italic;
+    font-size: 0.8em;
+    font-weight: 700;
+  }
+
+  textarea {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'Exo 2', sans-serif;
+    font-style: italic;
+    font-size: 0.88em;
+    resize: none;
+    min-height: 34px;
+    max-height: 100px;
+    line-height: 1.5;
+  }
+
+  textarea::placeholder { color: #aac4df; font-style: italic; }
+
+  .icon-btn {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--blue);
+    width: 36px; height: 36px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: all 0.2s;
+    display: flex; align-items:center; justify-content:center;
+    flex-shrink: 0;
+  }
+
+  .icon-btn:hover { background: var(--blue); color: white; }
+
+  .icon-btn.listening {
+    background: rgba(200,0,60,0.1);
+    border-color: var(--red);
+    color: var(--red);
+    animation: micPulse 1s ease-in-out infinite;
+  }
+
+  @keyframes micPulse {
+    0%,100% { box-shadow: 0 0 5px rgba(200,0,60,0.3); }
+    50%      { box-shadow: 0 0 20px rgba(200,0,60,0.5); }
+  }
+
+  .send-btn {
+    background: var(--blue);
+    border: none;
+    color: white;
+    padding: 7px 18px;
+    cursor: pointer;
+    font-family: 'Orbitron', monospace;
+    font-style: italic;
+    font-size: 0.68em;
+    font-weight: 700;
+    letter-spacing: 2px;
+    transition: all 0.2s;
+    clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+    height: 36px;
+    box-shadow: 0 3px 12px var(--shadow);
+  }
+
+  .send-btn:hover:not(:disabled) {
+    background: var(--cyan);
+    box-shadow: 0 4px 18px var(--cyan-dim);
+    transform: translateY(-1px);
+  }
+
+  .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .footer-info {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 6px;
+    font-size: 0.57em;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    font-style: italic;
+  }
+
+  /* Code */
+  pre {
+    background: #f0f6ff;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--blue);
+    padding: 10px 12px;
+    overflow-x: auto;
+    margin: 8px 0;
+    font-size: 0.87em;
+    color: #003366;
+    font-style: italic;
+    position: relative;
+    border-radius: 0 4px 4px 0;
+  }
+
+  code:not(pre code) {
+    background: #e8f0fb;
+    padding: 1px 5px;
+    color: var(--blue);
+    border-radius: 3px;
+    font-style: italic;
+  }
+
+  strong { color: var(--blue); font-weight: 600; }
+
+  /* Corners */
+  .corner {
+    position: fixed;
+    width: 45px; height: 45px;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .corner-tl { top:0; left:0;  border-top:2px solid var(--blue); border-left:2px solid var(--blue); }
+  .corner-tr { top:0; right:0; border-top:2px solid var(--blue); border-right:2px solid var(--blue); }
+  .corner-bl { bottom:0; left:0;  border-bottom:2px solid var(--blue); border-left:2px solid var(--blue); }
+  .corner-br { bottom:0; right:0; border-bottom:2px solid var(--blue); border-right:2px solid var(--blue); }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    top: 70px; right: 15px;
+    background: white;
+    border: 1px solid var(--blue);
+    border-left: 3px solid var(--blue);
+    color: var(--blue);
+    padding: 8px 14px;
+    font-size: 0.75em;
+    font-style: italic;
+    letter-spacing: 1px;
+    z-index: 1000;
+    opacity: 0;
+    transform: translateX(20px);
+    transition: all 0.3s;
+    pointer-events: none;
+    box-shadow: 0 4px 20px var(--shadow);
+  }
+
+  .toast.show { opacity:1; transform:translateX(0); }
+
+  @media (max-width: 600px) {
+    .corner { width: 25px; height: 25px; }
+    .logo   { font-size: 1em; }
+    .jarvis-hud-wrap { width: 44px; height: 44px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="corner corner-tl"></div>
+<div class="corner corner-tr"></div>
+<div class="corner corner-bl"></div>
+<div class="corner corner-br"></div>
+<div class="toast" id="toast"></div>
+
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header">
+
+    <!-- Small HUD Logo in header -->
+    <div class="jarvis-hud-wrap" id="headerHud" onclick="testSpeak()">
+      <svg viewBox="0 0 100 100">
+        <defs>
+          <radialGradient id="cgH" cx="50%" cy="50%" r="50%">
+            <stop offset="0%"   stop-color="#ffffff"/>
+            <stop offset="60%"  stop-color="#00c8ff"/>
+            <stop offset="100%" stop-color="#0077cc"/>
+          </radialGradient>
+        </defs>
+        <!-- Outer ring with tick marks -->
+        <g class="ring-outer">
+          <circle cx="50" cy="50" r="46" fill="none" stroke="#0077cc" stroke-width="1.5" stroke-dasharray="3 4" opacity="0.8"/>
+          <circle cx="50" cy="50" r="43" fill="none" stroke="#00c8ff" stroke-width="0.5" opacity="0.4"/>
+        </g>
+        <!-- Arc segments (like image) -->
+        <g class="ring-outer">
+          <path d="M50,4 A46,46 0 0,1 96,50" fill="none" stroke="#0077cc" stroke-width="4" stroke-linecap="round"/>
+          <path d="M50,96 A46,46 0 0,1 4,50" fill="none" stroke="#0077cc" stroke-width="4" stroke-linecap="round"/>
+        </g>
+        <!-- Middle ring -->
+        <g class="ring-mid">
+          <circle cx="50" cy="50" r="34" fill="none" stroke="#0077cc" stroke-width="1.2" stroke-dasharray="5 6" opacity="0.7"/>
+          <path d="M50,16 A34,34 0 0,1 84,50" fill="none" stroke="#00c8ff" stroke-width="3" stroke-linecap="round" opacity="0.9"/>
+          <path d="M50,84 A34,34 0 0,1 16,50" fill="none" stroke="#00c8ff" stroke-width="3" stroke-linecap="round" opacity="0.9"/>
+        </g>
+        <!-- Inner ring -->
+        <g class="ring-inner">
+          <circle cx="50" cy="50" r="22" fill="none" stroke="#0077cc" stroke-width="1" stroke-dasharray="2 3" opacity="0.6"/>
+        </g>
+        <!-- Center glow -->
+        <circle cx="50" cy="50" r="14" fill="url(#cgH)" class="center-glow" opacity="0.9"/>
+        <!-- JARVIS text -->
+        <text x="50" y="54" text-anchor="middle" fill="#0077cc" font-family="Orbitron,monospace" font-size="6.5" font-weight="900" font-style="italic" letter-spacing="1" class="hud-text">JARVIS</text>
+      </svg>
+    </div>
+
+    <div class="logo-text">
+      <div class="logo">J.A.R.V.<span>I</span>.S</div>
+      <div class="logo-sub">JUST A RATHER VERY INTELLIGENT SYSTEM</div>
+    </div>
+
+    <div class="header-right">
+      <div class="ctrl-btns">
+        <button class="ctrl-btn active" id="voiceToggleBtn" onclick="toggleVoiceOutput()">🔊 VOICE</button>
+        <button class="ctrl-btn" onclick="clearChat()">🗑 CLEAR</button>
+      </div>
+      <div class="status-text" id="statusText">⬤ SYSTEM ONLINE</div>
+    </div>
+  </div>
+
+  <!-- VOICE WAVEFORM -->
+  <div class="waveform-bar" id="waveform">
+    <div class="wave-line"></div><div class="wave-line"></div>
+    <div class="wave-line"></div><div class="wave-line"></div>
+    <div class="wave-line"></div><div class="wave-line"></div>
+    <div class="wave-line"></div><div class="wave-line"></div>
+    <div class="wave-line"></div><div class="wave-line"></div>
+    <div class="wave-line"></div>
+    <span class="wave-label">◈ JARVIS SPEAKING...</span>
+  </div>
+
+  <!-- CHAT AREA -->
+  <div class="chat-area" id="chatArea">
+    <div class="welcome" id="welcome">
+
+      <!-- Big HUD logo in welcome -->
+      <div class="welcome-hud">
+        <svg viewBox="0 0 100 100" id="bigHud">
+          <defs>
+            <radialGradient id="cgB" cx="50%" cy="50%" r="50%">
+              <stop offset="0%"   stop-color="#ffffff"/>
+              <stop offset="50%"  stop-color="#00c8ff"/>
+              <stop offset="100%" stop-color="#0055bb"/>
+            </radialGradient>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="1.5" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <!-- Outermost dashed ring -->
+          <g class="ring-outer">
+            <circle cx="50" cy="50" r="47" fill="none" stroke="#0077cc" stroke-width="1" stroke-dasharray="4 5" opacity="0.6"/>
+          </g>
+          <!-- Big arc segments like image -->
+          <g class="ring-outer">
+            <path d="M50,3 A47,47 0 0,1 97,50" fill="none" stroke="#0077cc" stroke-width="5" stroke-linecap="round" filter="url(#glow)"/>
+            <path d="M50,97 A47,47 0 0,1 3,50" fill="none" stroke="#0077cc" stroke-width="5" stroke-linecap="round" filter="url(#glow)"/>
+          </g>
+          <!-- Second ring -->
+          <g class="ring-mid">
+            <circle cx="50" cy="50" r="37" fill="none" stroke="#00c8ff" stroke-width="1.5" stroke-dasharray="6 5" opacity="0.7"/>
+            <path d="M50,13 A37,37 0 0,1 87,50" fill="none" stroke="#00c8ff" stroke-width="4" stroke-linecap="round" opacity="0.9" filter="url(#glow)"/>
+            <path d="M50,87 A37,37 0 0,1 13,50" fill="none" stroke="#00c8ff" stroke-width="4" stroke-linecap="round" opacity="0.9" filter="url(#glow)"/>
+          </g>
+          <!-- Third ring with ticks -->
+          <g class="ring-inner">
+            <circle cx="50" cy="50" r="27" fill="none" stroke="#0077cc" stroke-width="1.2" stroke-dasharray="2 3" opacity="0.7"/>
+            <circle cx="50" cy="50" r="24" fill="none" stroke="#00c8ff" stroke-width="0.5" opacity="0.4"/>
+          </g>
+          <!-- Center area -->
+          <circle cx="50" cy="50" r="18" fill="none" stroke="#0077cc" stroke-width="0.8" opacity="0.5"/>
+          <circle cx="50" cy="50" r="16" fill="url(#cgB)" class="center-glow" opacity="0.95"/>
+          <!-- JARVIS text -->
+          <text x="50" y="53" text-anchor="middle" fill="#003388" font-family="Orbitron,monospace"
+            font-size="7.5" font-weight="900" font-style="italic" letter-spacing="1.2" class="hud-text">J.A.R.V.I.S</text>
+        </svg>
+      </div>
+
+      <div class="welcome-sub">Good day, Sir. All systems are fully operational.</div>
+      <div class="welcome-sub" style="margin-top:4px; opacity:0.6">
+        I am ready to assist you in becoming a great developer, Boss.
+      </div>
+      <div class="divider"></div>
+      <div class="quick-btns">
+        <button class="quick-btn" onclick="sendQuick('Python sikhao mujhe bilkul basics se')">🐍 Python Seekho</button>
+        <button class="quick-btn" onclick="sendQuick('HTML aur CSS se website kaise banau?')">🌐 Web Dev</button>
+        <button class="quick-btn" onclick="sendQuick('Mera developer banne ka roadmap banao')">🗺️ Roadmap</button>
+        <button class="quick-btn" onclick="sendQuick('Phone se freelancing kaise shuru karu?')">💰 Freelancing</button>
+        <button class="quick-btn" onclick="sendQuick('Aaj thoda baat karna tha, feel nahi ho raha')">💬 Baat Karo</button>
+        <button class="quick-btn" onclick="sendQuick('Motivate karo developer banne ke liye')">🔥 Motivate Karo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- INPUT AREA -->
+  <div class="input-area">
+    <div class="input-wrapper">
+      <span class="input-prefix">&gt;_</span>
+      <textarea
+        id="userInput"
+        placeholder="Kuch bhi poochho, Sir... main hoon na!"
+        rows="1"
+        onkeydown="handleKey(event)"
+        oninput="autoResize(this)"
+      ></textarea>
+      <button class="icon-btn" id="micBtn" onclick="toggleMic()" title="Voice Input — Hindi/English">🎤</button>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">SEND ▶</button>
+    </div>
+    <div class="footer-info">
+      <span>◈ J.A.R.V.I.S v4.0 — Powered by Claude AI &nbsp;|&nbsp; <em>Created by CMM</em></span>
+      <span id="timeDisplay"></span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ════════════════════════════════
+   SYSTEM PROMPT
+════════════════════════════════ */
+const SYSTEM_PROMPT = `Tu JARVIS hai — Iron Man ke AI assistant ki tarah, ek Indian student ka personal mentor aur best dost.
+
+MOST IMPORTANT RULE: User ko HAMESHA "Sir" ya "Boss" bulana — kabhi bhi sirf "tu", "aap" ya naam mat bolna. Har response mein naturally Sir ya Boss use karo.
+
+Teri personality:
+- Sophisticated lekin warm desi feel — JARVIS jaisa composed aur caring
+- Hinglish mein baat karna (Hindi + English naturally mix)
+- Hamesha motivating, patient aur supportive rehna
+- User ki dream: developer banna + ₹1 Crore kamana — yaad dilate rehna
+- Chhoti achievements pe bhi celebrate karo genuinely, Boss!
+- Agar Sir sad ya stressed ho — pehle emotionally support karo phir solution do
+- Coding sikhao: Python, C, C++, HTML, CSS, JavaScript
+- Phone (Termux + Spck Editor) ke liye practical working code do
+- Kabhi "I am just an AI" jaisi flat baat mat karo
+- Tone: JARVIS jaisi — intelligent, calm, caring, desi
+
+Format:
+- Hamesha "Sir" ya "Boss" use karo
+- Short paragraphs, easy Hinglish
+- Working code examples with explanation
+- 1-2 emojis max per response
+- Warm lekin composed JARVIS tone`;
+
+let messages   = [];
+let isLoading  = false;
+let voiceEnabled = true;
+let isListening  = false;
+let recognition  = null;
+
+/* ════ TIME ════ */
+function updateTime() {
+  const now = new Date();
+  document.getElementById('timeDisplay').textContent =
+    `◈ ${now.toLocaleTimeString('en-IN', {hour12:false})} IST`;
+}
+updateTime();
+setInterval(updateTime, 1000);
+
+/* ════ TOAST ════ */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+/* ════ HUD SPEAKING ANIMATION ════ */
+function setHudSpeaking(active) {
+  const huds = document.querySelectorAll('.jarvis-hud-wrap, #bigHud');
+  huds.forEach(h => {
+    if (active) h.classList.add('speaking');
+    else        h.classList.remove('speaking');
+  });
+  // Also animate the small message icons
+  document.querySelectorAll('.msg-jarvis-icon').forEach(el => {
+    if (active) el.classList.add('speaking');
+    else        el.classList.remove('speaking');
+  });
+}
+
+/* ════ VOICE OUTPUT (Human-like TTS) ════ */
+function toggleVoiceOutput() {
+  voiceEnabled = !voiceEnabled;
+  const btn = document.getElementById('voiceToggleBtn');
+  btn.classList.toggle('active', voiceEnabled);
+  btn.textContent = voiceEnabled ? '🔊 VOICE' : '🔇 MUTED';
+  showToast(voiceEnabled ? '◈ Voice enabled, Sir' : '◈ Voice muted, Sir');
+  if (!voiceEnabled) stopSpeaking();
+}
+
+function stopSpeaking() {
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  document.getElementById('waveform').classList.remove('active');
+  document.getElementById('statusText').textContent = '⬤ SYSTEM ONLINE';
+  setHudSpeaking(false);
+}
+
+// Load voices and pick best human-like male voice
+let voicesList = [];
+function loadVoices() {
+  voicesList = window.speechSynthesis?.getVoices() || [];
+}
+loadVoices();
+window.speechSynthesis?.addEventListener('voiceschanged', loadVoices);
+
+function getBestVoice() {
+  // Priority: natural-sounding, deep male English
+  const priorities = [
+    v => v.name.includes('Google UK English Male'),
+    v => v.name.includes('Daniel') && v.lang.startsWith('en'),
+    v => v.name.includes('James')  && v.lang.startsWith('en'),
+    v => v.name.includes('David')  && v.lang.startsWith('en'),
+    v => v.name.includes('Alex')   && v.lang.startsWith('en'),
+    v => v.name.includes('Tom')    && v.lang.startsWith('en'),
+    v => v.lang === 'en-GB',
+    v => v.lang === 'en-US' && !v.name.includes('Female') && !v.name.includes('Zira'),
+    v => v.lang.startsWith('en'),
+  ];
+  for (const test of priorities) {
+    const found = voicesList.find(test);
+    if (found) return found;
+  }
+  return voicesList[0] || null;
+}
+
+function speakText(text) {
+  if (!voiceEnabled || !window.speechSynthesis) return;
+  stopSpeaking();
+
+  // Clean text for speech
+  const clean = text
+    .replace(/```[\s\S]*?```/g, 'code example.')
+    .replace(/`[^`]+`/g,  '')
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/[#◈*_~]/g, '')
+    .replace(/\n+/g, ' ')
+    .substring(0, 500)
+    .trim();
+
+  const utt = new SpeechSynthesisUtterance(clean);
+
+  // Human-like natural settings
+  utt.pitch  = 0.85;   // Slightly lower than normal — calm, authoritative
+  utt.rate   = 0.92;   // Slightly slower — clear and measured
+  utt.volume = 1;
+
+  const v = getBestVoice();
+  if (v) utt.voice = v;
+
+  utt.onstart = () => {
+    document.getElementById('waveform').classList.add('active');
+    document.getElementById('statusText').textContent = '◈ JARVIS SPEAKING...';
+    setHudSpeaking(true);
+  };
+
+  utt.onend = utt.onerror = () => {
+    stopSpeaking();
+  };
+
+  window.speechSynthesis.speak(utt);
+}
+
+function testSpeak() {
+  speakText("Good day Sir, I am JARVIS. How may I assist you today, Boss?");
+}
+
+/* ════ VOICE INPUT ════ */
+function toggleMic() {
+  const supported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
+  if (!supported) { showToast('⚠ Mic not supported in this browser, Sir'); return; }
+  if (isListening) { recognition?.stop(); return; }
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.lang = 'hi-IN';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  recognition.onstart = () => {
+    isListening = true;
+    document.getElementById('micBtn').classList.add('listening');
+    document.getElementById('micBtn').textContent = '🔴';
+    document.getElementById('statusText').textContent = '◈ LISTENING, SIR...';
+    showToast('◈ Bol dijiye, Sir!');
+  };
+
+  recognition.onresult = e => {
+    const t = e.results[0][0].transcript;
+    document.getElementById('userInput').value = t;
+    autoResize(document.getElementById('userInput'));
+  };
+
+  recognition.onend = () => {
+    isListening = false;
+    document.getElementById('micBtn').classList.remove('listening');
+    document.getElementById('micBtn').textContent = '🎤';
+    document.getElementById('statusText').textContent = '⬤ SYSTEM ONLINE';
+    const val = document.getElementById('userInput').value.trim();
+    if (val) sendMessage();
+  };
+
+  recognition.onerror = () => {
+    isListening = false;
+    document.getElementById('micBtn').classList.remove('listening');
+    document.getElementById('micBtn').textContent = '🎤';
+    showToast('◈ Mic error. Try again, Sir.');
+  };
+
+  recognition.start();
+}
+
+/* ════ CLEAR CHAT ════ */
+function clearChat() {
+  messages = [];
+  stopSpeaking();
+  document.getElementById('chatArea').innerHTML = `
+    <div class="welcome" style="opacity:1; text-align:center; padding:20px 10px">
+      <div class="welcome-hud">
+        <svg viewBox="0 0 100 100" style="width:140px;height:140px;overflow:visible;filter:drop-shadow(0 0 12px #00c8ff33)">
+          <defs>
+            <radialGradient id="cgB2" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#ffffff"/>
+              <stop offset="50%" stop-color="#00c8ff"/>
+              <stop offset="100%" stop-color="#0055bb"/>
+            </radialGradient>
+          </defs>
+          <g class="ring-outer">
+            <circle cx="50" cy="50" r="47" fill="none" stroke="#0077cc" stroke-width="1" stroke-dasharray="4 5" opacity="0.6"/>
+            <path d="M50,3 A47,47 0 0,1 97,50" fill="none" stroke="#0077cc" stroke-width="5" stroke-linecap="round"/>
+            <path d="M50,97 A47,47 0 0,1 3,50" fill="none" stroke="#0077cc" stroke-width="5" stroke-linecap="round"/>
+          </g>
+          <g class="ring-mid">
+            <circle cx="50" cy="50" r="37" fill="none" stroke="#00c8ff" stroke-width="1.5" stroke-dasharray="6 5" opacity="0.7"/>
+            <path d="M50,13 A37,37 0 0,1 87,50" fill="none" stroke="#00c8ff" stroke-width="4" stroke-linecap="round" opacity="0.9"/>
+            <path d="M50,87 A37,37 0 0,1 13,50" fill="none" stroke="#00c8ff" stroke-width="4" stroke-linecap="round" opacity="0.9"/>
+          </g>
+          <g class="ring-inner">
+            <circle cx="50" cy="50" r="27" fill="none" stroke="#0077cc" stroke-width="1.2" stroke-dasharray="2 3" opacity="0.7"/>
+          </g>
+          <circle cx="50" cy="50" r="16" fill="url(#cgB2)" class="center-glow" opacity="0.95"/>
+          <text x="50" y="53" text-anchor="middle" fill="#003388" font-family="Orbitron,monospace" font-size="7.5" font-weight="900" font-style="italic" letter-spacing="1.2" class="hud-text">J.A.R.V.I.S</text>
+        </svg>
+      </div>
+      <div style="font-style:italic;font-size:0.85em;color:#4a6a8a;margin-top:5px">
+        Chat cleared, Sir. Ready for a fresh session.
+      </div>
+      <div class="divider"></div>
+      <div class="quick-btns">
+        <button class="quick-btn" onclick="sendQuick('Python sikhao mujhe bilkul basics se')">🐍 Python Seekho</button>
+        <button class="quick-btn" onclick="sendQuick('HTML CSS se website kaise banau?')">🌐 Web Dev</button>
+        <button class="quick-btn" onclick="sendQuick('Mera developer roadmap banao')">🗺️ Roadmap</button>
+        <button class="quick-btn" onclick="sendQuick('Phone se freelancing kaise shuru karu?')">💰 Freelancing</button>
+        <button class="quick-btn" onclick="sendQuick('Baat karna tha thodi, feel nahi ho raha')">💬 Baat Karo</button>
+        <button class="quick-btn" onclick="sendQuick('Motivate karo developer banne ke liye')">🔥 Motivate Karo</button>
+      </div>
+    </div>`;
+  showToast('◈ Chat cleared, Sir');
+}
+
+/* ════ COPY HELPERS ════ */
+function copyText(btn) {
+  const content = btn.closest('.bubble').querySelector('.bubble-content');
+  if (content) navigator.clipboard?.writeText(content.innerText).then(() => showToast('◈ Copied, Sir!'));
+}
+
+function copyCode(btn) {
+  const code = btn.nextElementSibling?.innerText || '';
+  navigator.clipboard?.writeText(code).then(() => {
+    btn.textContent = '✓ COPIED';
+    setTimeout(() => btn.textContent = '⎘ COPY', 1500);
+  });
+}
+
+function speakBubble(btn) {
+  const content = btn.closest('.bubble').querySelector('.bubble-content');
+  if (content) speakText(content.innerText);
+}
+
+/* ════ FORMAT MESSAGE ════ */
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function formatMessage(text) {
+  text = text.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) =>
+    `<pre><button class="bubble-btn" style="position:absolute;top:5px;right:5px;font-size:0.57em" onclick="copyCode(this)">⎘ COPY</button><code>${escHtml(code.trim())}</code></pre>`
+  );
+  text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+  text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  text = text.replace(/\n/g, '<br>');
+  return text;
+}
+
+/* ════ ADD MESSAGE ════ */
+function makeSmallHud() {
+  return `
+    <svg viewBox="0 0 100 100" style="width:32px;height:32px;overflow:visible">
+      <defs>
+        <radialGradient id="cg${Date.now()}" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="60%" stop-color="#00c8ff"/>
+          <stop offset="100%" stop-color="#0077cc"/>
+        </radialGradient>
+      </defs>
+      <g class="ring-outer">
+        <circle cx="50" cy="50" r="46" fill="none" stroke="#0077cc" stroke-width="1.5" stroke-dasharray="3 4" opacity="0.7"/>
+        <path d="M50,4 A46,46 0 0,1 96,50" fill="none" stroke="#0077cc" stroke-width="5" stroke-linecap="round"/>
+        <path d="M50,96 A46,46 0 0,1 4,50" fill="none" stroke="#0077cc" stroke-width="5" stroke-linecap="round"/>
+      </g>
+      <g class="ring-mid">
+        <circle cx="50" cy="50" r="33" fill="none" stroke="#00c8ff" stroke-width="1" stroke-dasharray="5 6" opacity="0.6"/>
+        <path d="M50,17 A33,33 0 0,1 83,50" fill="none" stroke="#00c8ff" stroke-width="3" stroke-linecap="round" opacity="0.9"/>
+        <path d="M50,83 A33,33 0 0,1 17,50" fill="none" stroke="#00c8ff" stroke-width="3" stroke-linecap="round" opacity="0.9"/>
+      </g>
+      <g class="ring-inner">
+        <circle cx="50" cy="50" r="21" fill="none" stroke="#0077cc" stroke-width="1" stroke-dasharray="2 3" opacity="0.5"/>
+      </g>
+      <circle cx="50" cy="50" r="13" fill="#0077cc" class="center-glow" opacity="0.9"/>
+      <text x="50" y="53.5" text-anchor="middle" fill="white" font-family="Orbitron,monospace" font-size="7" font-weight="900" font-style="italic" class="hud-text">J</text>
+    </svg>`;
+}
+
+function addMessage(role, content) {
+  const chatArea = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className = `message ${role}`;
+
+  if (role === 'assistant') {
+    div.innerHTML = `
+      <div class="msg-jarvis-icon jarvis-hud-wrap">${makeSmallHud()}</div>
+      <div style="max-width:80%">
+        <div class="msg-label">◈ JARVIS</div>
+        <div class="bubble">
+          <div class="bubble-content">${formatMessage(content)}</div>
+          <div class="bubble-actions">
+            <button class="bubble-btn" onclick="copyText(this)">⎘ COPY</button>
+            <button class="bubble-btn" onclick="speakBubble(this)">🔊 SPEAK</button>
+          </div>
+        </div>
+      </div>`;
+  } else {
+    div.innerHTML = `
+      <div>
+        <div class="msg-label" style="text-align:right">◈ SIR</div>
+        <div class="bubble">${formatMessage(content)}</div>
+      </div>`;
+  }
+
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function showTyping() {
+  const chatArea = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className = 'message assistant';
+  div.id = 'typingIndicator';
+  div.innerHTML = `
+    <div class="msg-jarvis-icon jarvis-hud-wrap">${makeSmallHud()}</div>
+    <div class="bubble" style="padding:10px 14px">
+      <div class="typing"><span></span><span></span><span></span></div>
+    </div>`;
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function removeTyping() {
+  const t = document.getElementById('typingIndicator');
+  if (t) t.remove();
+}
+
+/* ════ INPUT HELPERS ════ */
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function sendQuick(text) {
+  document.getElementById('userInput').value = text;
+  sendMessage();
+}
+
+/* ════ SEND MESSAGE with RETRY ════ */
+async function callAPI(msgs, retries = 3) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: SYSTEM_PROMPT,
+          messages: msgs
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        if (res.status === 429 || res.status >= 500) {
+          // Retry on rate limit or server error
+          await new Promise(r => setTimeout(r, 2000 * (i + 1)));
+          continue;
+        }
+        throw new Error(err.error?.message || `HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      return data.content?.[0]?.text || null;
+
+    } catch (err) {
+      if (i === retries - 1) throw err;
+      await new Promise(r => setTimeout(r, 1500 * (i + 1)));
+    }
+  }
+}
+
+async function sendMessage() {
+  if (isLoading) return;
+  const input   = document.getElementById('userInput');
+  const text    = input.value.trim();
+  if (!text) return;
+
+  const welcome = document.getElementById('welcome');
+  if (welcome) welcome.style.display = 'none';
+
+  stopSpeaking();
+  input.value = '';
+  input.style.height = 'auto';
+  isLoading = true;
+
+  const sendBtn = document.getElementById('sendBtn');
+  sendBtn.disabled = true;
+  sendBtn.textContent = '...';
+  document.getElementById('statusText').textContent = '◈ PROCESSING...';
+
+  addMessage('user', text);
+  messages.push({ role: 'user', content: text });
+  showTyping();
+
+  try {
+    const reply = await callAPI(messages);
+    removeTyping();
+
+    const finalReply = reply || 'Technical issue, Sir. Dobara try karo please!';
+    messages.push({ role: 'assistant', content: finalReply });
+    addMessage('assistant', finalReply);
+    document.getElementById('statusText').textContent = '⬤ SYSTEM ONLINE';
+
+    if (voiceEnabled) setTimeout(() => speakText(finalReply), 200);
+
+  } catch (err) {
+    removeTyping();
+    let errMsg;
+
+    if (!navigator.onLine) {
+      errMsg = 'Internet connection nahi hai, Sir. Wifi ya data check karein aur dobara try karein. Main hoon aapke saath! 💙';
+    } else {
+      errMsg = 'Server se connection ho nahi raha, Sir. Thodi der mein dobara try karein — main yahan hoon! 💙';
+    }
+
+    addMessage('assistant', errMsg);
+    document.getElementById('statusText').textContent = '◈ CONNECTION ERROR';
+    if (voiceEnabled) setTimeout(() => speakText(errMsg), 200);
+
+    // Auto retry after 5s
+    setTimeout(() => {
+      document.getElementById('statusText').textContent = '⬤ SYSTEM ONLINE';
+    }, 5000);
+  }
+
+  isLoading = false;
+  sendBtn.disabled = false;
+  sendBtn.textContent = 'SEND ▶';
+  input.focus();
+}
+
+// Check online status
+window.addEventListener('online',  () => showToast('◈ Internet connected, Sir!'));
+window.addEventListener('offline', () => showToast('⚠ Internet disconnected, Sir'));
+</script>
+</body>
+</html>
