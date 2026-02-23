@@ -1,0 +1,1567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>MAYRA — Personal AI</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Raleway:ital,wght@0,300;0,400;1,300;1,400;1,600&display=swap');
+
+  :root {
+    --rose:      #e8729a;
+    --rose-dim:  #e8729a22;
+    --rose-glow: #e8729a99;
+    --rose-soft: #e8729a0f;
+    --gold:      #d4a853;
+    --gold-dim:  #d4a85333;
+    --gold-glow: #d4a85388;
+    --lavender:  #c9a0dc;
+    --bg:        #0d0812;
+    --bg2:       #130a1a;
+    --panel:     #1a0d22;
+    --border:    #3d1f4e;
+    --text:      #f0d8f5;
+    --text-dim:  #a07ab8;
+    --shadow:    rgba(232,114,154,0.2);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Raleway', sans-serif;
+    font-style: italic;
+    font-weight: 300;
+    height: 100vh;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Animated particle background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 20%, rgba(232,114,154,0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(201,160,220,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, rgba(212,168,83,0.04) 0%, transparent 60%);
+    z-index: 0;
+    animation: bgShift 12s ease-in-out infinite alternate;
+  }
+
+  @keyframes bgShift {
+    0%   { opacity: 0.7; transform: scale(1); }
+    100% { opacity: 1;   transform: scale(1.05); }
+  }
+
+  /* Soft grid */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--rose-dim) 1px, transparent 1px),
+      linear-gradient(90deg, var(--rose-dim) 1px, transparent 1px);
+    background-size: 50px 50px;
+    opacity: 0.18;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 8px 10px;
+  }
+
+  /* ═══ HEADER ═══ */
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, var(--panel), rgba(30,10,40,0.95));
+    border: 1px solid var(--border);
+    border-bottom: 2px solid var(--rose);
+    margin-bottom: 6px;
+    position: relative;
+    clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 100%);
+    box-shadow: 0 4px 30px rgba(232,114,154,0.15);
+  }
+
+  .header::before {
+    content: '';
+    position: absolute;
+    bottom: -2px; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--rose), var(--gold), var(--rose), transparent);
+    animation: shimmer 4s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0%,100% { opacity: 0.6; }
+    50%      { opacity: 1; filter: brightness(1.3); }
+  }
+
+  /* MAYRA Orb Logo */
+  .mayra-orb-wrap {
+    width: 52px; height: 52px;
+    flex-shrink: 0;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .mayra-orb-wrap svg {
+    width: 100%; height: 100%;
+    overflow: visible;
+  }
+
+  /* Petal rings */
+  .petal-outer {
+    transform-origin: 50% 50%;
+    animation: petalSpin 14s linear infinite;
+  }
+
+  .petal-mid {
+    transform-origin: 50% 50%;
+    animation: petalSpin 9s linear infinite reverse;
+  }
+
+  .petal-inner {
+    transform-origin: 50% 50%;
+    animation: petalSpin 5s linear infinite;
+  }
+
+  @keyframes petalSpin { to { transform: rotate(360deg); } }
+
+  .orb-glow {
+    animation: orbPulse 2.5s ease-in-out infinite;
+  }
+
+  @keyframes orbPulse {
+    0%,100% { opacity: 0.8; }
+    50%      { opacity: 1; filter: brightness(1.3); }
+  }
+
+  /* Speaking state */
+  .speaking .petal-outer { animation-duration: 2.5s; }
+  .speaking .petal-mid   { animation-duration: 1.8s; }
+  .speaking .petal-inner { animation-duration: 1s; }
+  .speaking .orb-glow    { animation-duration: 0.3s; }
+
+  .logo-text { flex: 1; }
+
+  .logo {
+    font-family: 'Cinzel', serif;
+    font-style: normal;
+    font-size: 1.4em;
+    font-weight: 900;
+    color: var(--rose);
+    letter-spacing: 6px;
+    text-shadow: 0 0 20px var(--rose-glow), 0 0 40px var(--rose-dim);
+  }
+
+  .logo-sub {
+    font-size: 0.52em;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    font-style: italic;
+    margin-top: 1px;
+  }
+
+  .header-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+
+  .ctrl-btns { display: flex; gap: 5px; }
+
+  .ctrl-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--rose);
+    font-family: 'Raleway', sans-serif;
+    font-style: italic;
+    font-size: 0.58em;
+    padding: 3px 9px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+    clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%);
+  }
+
+  .ctrl-btn:hover, .ctrl-btn.active {
+    background: var(--rose-dim);
+    border-color: var(--rose);
+    box-shadow: 0 0 10px var(--rose-dim);
+  }
+
+  .status-text {
+    font-size: 0.56em;
+    color: var(--rose-glow);
+    letter-spacing: 1px;
+    font-style: italic;
+  }
+
+  /* ═══ WAVEFORM ═══ */
+  .waveform-bar {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 5px;
+    background: rgba(232,114,154,0.05);
+    border: 1px solid var(--border);
+    border-bottom: 2px solid var(--rose);
+    margin-bottom: 5px;
+  }
+
+  .waveform-bar.active { display: flex; }
+
+  .wave-line {
+    width: 3px;
+    border-radius: 3px;
+    animation: waveDance 0.55s ease-in-out infinite;
+  }
+
+  .wave-line:nth-child(odd)  { background: var(--rose); }
+  .wave-line:nth-child(even) { background: var(--gold); }
+
+  .wave-line:nth-child(1)  { height: 7px;  animation-delay:0.00s; }
+  .wave-line:nth-child(2)  { height: 16px; animation-delay:0.08s; }
+  .wave-line:nth-child(3)  { height: 28px; animation-delay:0.14s; }
+  .wave-line:nth-child(4)  { height: 20px; animation-delay:0.18s; }
+  .wave-line:nth-child(5)  { height: 38px; animation-delay:0.10s; }
+  .wave-line:nth-child(6)  { height: 26px; animation-delay:0.22s; }
+  .wave-line:nth-child(7)  { height: 44px; animation-delay:0.05s; }
+  .wave-line:nth-child(8)  { height: 30px; animation-delay:0.28s; }
+  .wave-line:nth-child(9)  { height: 18px; animation-delay:0.14s; }
+  .wave-line:nth-child(10) { height: 11px; animation-delay:0.18s; }
+  .wave-line:nth-child(11) { height: 5px;  animation-delay:0.00s; }
+
+  @keyframes waveDance {
+    0%,100% { transform: scaleY(0.3); opacity: 0.5; }
+    50%      { transform: scaleY(1);   opacity: 1;   }
+  }
+
+  .wave-label {
+    font-size: 0.6em;
+    color: var(--rose);
+    letter-spacing: 2px;
+    font-style: italic;
+    margin-left: 10px;
+  }
+
+  /* ═══ CHAT ═══ */
+  .chat-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    background: rgba(13,8,18,0.7);
+    border: 1px solid var(--border);
+    scroll-behavior: smooth;
+    backdrop-filter: blur(6px);
+  }
+
+  .chat-area::-webkit-scrollbar { width: 3px; }
+  .chat-area::-webkit-scrollbar-track { background: transparent; }
+  .chat-area::-webkit-scrollbar-thumb { background: var(--rose); border-radius: 3px; }
+
+  /* Welcome */
+  .welcome {
+    text-align: center;
+    padding: 20px 10px;
+    opacity: 0;
+    animation: fadeUp 1s ease 0.4s forwards;
+  }
+
+  @keyframes fadeUp {
+    from { opacity:0; transform:translateY(18px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+
+  /* Big orb in welcome */
+  .welcome-orb {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 14px;
+  }
+
+  .welcome-orb svg {
+    width: 170px; height: 170px;
+    overflow: visible;
+    filter: drop-shadow(0 0 20px rgba(232,114,154,0.3));
+  }
+
+  .welcome-name {
+    font-family: 'Cinzel', serif;
+    font-style: normal;
+    font-size: 2.4em;
+    font-weight: 900;
+    color: var(--rose);
+    letter-spacing: 10px;
+    text-shadow: 0 0 30px var(--rose-glow), 0 0 60px var(--rose-dim);
+    animation: nameGlow 4s ease-in-out infinite;
+  }
+
+  @keyframes nameGlow {
+    0%,100% { text-shadow: 0 0 20px var(--rose-glow), 0 0 40px var(--rose-dim); }
+    50%      { text-shadow: 0 0 40px var(--rose-glow), 0 0 80px var(--rose-dim), 0 0 120px var(--rose-dim); }
+  }
+
+  .welcome-sub {
+    font-style: italic;
+    font-size: 0.82em;
+    color: var(--text-dim);
+    margin-top: 6px;
+    line-height: 1.6;
+  }
+
+  .divider {
+    width: 50%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--rose), var(--gold), var(--rose), transparent);
+    margin: 14px auto;
+  }
+
+  .quick-btns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    justify-content: center;
+    margin-top: 12px;
+  }
+
+  .quick-btn {
+    padding: 6px 14px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: 'Raleway', sans-serif;
+    font-style: italic;
+    font-size: 0.72em;
+    cursor: pointer;
+    transition: all 0.25s;
+    clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  }
+
+  .quick-btn:hover {
+    border-color: var(--rose);
+    background: var(--rose-dim);
+    color: var(--rose);
+    box-shadow: 0 0 14px var(--rose-dim);
+    transform: translateY(-2px);
+  }
+
+  /* Messages */
+  .message { margin: 10px 0; animation: slideUp 0.3s ease; }
+
+  @keyframes slideUp {
+    from { opacity:0; transform:translateY(10px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+
+  .message.user      { display:flex; justify-content:flex-end; }
+  .message.assistant { display:flex; justify-content:flex-start; gap:8px; align-items:flex-start; }
+
+  .msg-icon {
+    width: 34px; height: 34px;
+    flex-shrink: 0;
+    margin-top: 4px;
+    cursor: pointer;
+  }
+
+  .msg-icon svg { width:100%; height:100%; overflow:visible; }
+
+  .bubble {
+    max-width: 80%;
+    padding: 10px 14px;
+    font-size: 0.87em;
+    line-height: 1.7;
+    font-style: italic;
+  }
+
+  .message.user .bubble {
+    background: linear-gradient(135deg, rgba(232,114,154,0.12), rgba(212,168,83,0.06));
+    border: 1px solid var(--border);
+    border-right: 2px solid var(--rose);
+    color: var(--text);
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
+  }
+
+  .message.assistant .bubble {
+    background: linear-gradient(135deg, rgba(26,13,34,0.95), rgba(19,10,26,0.9));
+    border: 1px solid var(--border);
+    border-left: 2px solid var(--rose);
+    color: var(--text);
+    clip-path: polygon(10px 0, 100% 0, 100% 100%, 0 100%, 0 10px);
+  }
+
+  .msg-label {
+    font-size: 0.58em;
+    color: var(--rose);
+    letter-spacing: 2px;
+    margin-bottom: 3px;
+    opacity: 0.7;
+    font-style: italic;
+  }
+
+  .bubble-actions {
+    display: flex;
+    gap: 5px;
+    margin-top: 7px;
+  }
+
+  .bubble-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: 'Raleway', sans-serif;
+    font-style: italic;
+    font-size: 0.58em;
+    padding: 2px 8px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.15s;
+  }
+
+  .bubble-btn:hover { border-color: var(--rose); color: var(--rose); background: var(--rose-dim); }
+
+  /* Typing */
+  .typing { display:flex; gap:5px; align-items:center; padding:7px 0; }
+
+  .typing span {
+    width: 7px; height: 7px;
+    background: var(--rose);
+    border-radius: 50%;
+    animation: typeDance 1s ease-in-out infinite;
+    box-shadow: 0 0 6px var(--rose-glow);
+  }
+
+  .typing span:nth-child(2) { animation-delay:0.2s; background: var(--gold); box-shadow: 0 0 6px var(--gold-glow); }
+  .typing span:nth-child(3) { animation-delay:0.4s; }
+
+  @keyframes typeDance {
+    0%,100% { transform:translateY(0);   opacity:0.4; }
+    50%      { transform:translateY(-7px); opacity:1;   }
+  }
+
+  /* ═══ INPUT ═══ */
+  .input-area { padding: 5px 0 2px; }
+
+  .input-wrapper {
+    display: flex;
+    gap: 7px;
+    align-items: center;
+    background: linear-gradient(135deg, var(--panel), rgba(19,10,26,0.98));
+    border: 1px solid var(--border);
+    border-top: 2px solid var(--rose);
+    padding: 7px 12px;
+    clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 0 100%);
+  }
+
+  .input-prefix {
+    color: var(--rose);
+    font-family: 'Cinzel', serif;
+    font-style: normal;
+    font-size: 0.82em;
+    font-weight: 700;
+    text-shadow: 0 0 8px var(--rose-glow);
+  }
+
+  textarea {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'Raleway', sans-serif;
+    font-style: italic;
+    font-size: 0.88em;
+    resize: none;
+    min-height: 34px;
+    max-height: 100px;
+    line-height: 1.5;
+  }
+
+  textarea::placeholder { color: rgba(232,114,154,0.28); font-style: italic; }
+
+  .icon-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--rose);
+    width: 36px; height: 36px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: all 0.2s;
+    display: flex; align-items:center; justify-content:center;
+    flex-shrink: 0;
+    border-radius: 50%;
+  }
+
+  .icon-btn:hover { background: var(--rose-dim); box-shadow: 0 0 12px var(--rose-dim); }
+
+  .icon-btn.listening {
+    background: rgba(232,114,154,0.2);
+    border-color: var(--gold);
+    color: var(--gold);
+    animation: micGlow 1s ease-in-out infinite;
+  }
+
+  @keyframes micGlow {
+    0%,100% { box-shadow: 0 0 5px var(--gold-dim); }
+    50%      { box-shadow: 0 0 20px var(--gold-glow); }
+  }
+
+  .send-btn {
+    background: linear-gradient(135deg, var(--rose), #c05580);
+    border: none;
+    color: white;
+    padding: 7px 18px;
+    cursor: pointer;
+    font-family: 'Cinzel', serif;
+    font-style: normal;
+    font-size: 0.65em;
+    font-weight: 700;
+    letter-spacing: 2px;
+    transition: all 0.2s;
+    clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+    height: 36px;
+    box-shadow: 0 3px 15px var(--rose-dim);
+  }
+
+  .send-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, var(--gold), #b8903a);
+    box-shadow: 0 4px 20px var(--gold-dim);
+    transform: translateY(-1px);
+  }
+
+  .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .footer-info {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 6px;
+    font-size: 0.55em;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    font-style: italic;
+    opacity: 0.7;
+  }
+
+  /* Code */
+  pre {
+    background: rgba(0,0,0,0.5);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--rose);
+    padding: 10px 12px;
+    overflow-x: auto;
+    margin: 8px 0;
+    font-size: 0.87em;
+    color: #f0c0d8;
+    font-style: italic;
+    position: relative;
+  }
+
+  code:not(pre code) {
+    background: rgba(232,114,154,0.1);
+    padding: 1px 5px;
+    color: var(--rose);
+    border-radius: 3px;
+  }
+
+  strong { color: var(--rose); font-weight: 600; }
+
+  /* Corners */
+  .corner {
+    position: fixed;
+    width: 40px; height: 40px;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .corner-tl { top:0; left:0;  border-top:2px solid var(--rose); border-left:2px solid var(--rose); }
+  .corner-tr { top:0; right:0; border-top:2px solid var(--rose); border-right:2px solid var(--rose); }
+  .corner-bl { bottom:0; left:0;  border-bottom:2px solid var(--rose); border-left:2px solid var(--rose); }
+  .corner-br { bottom:0; right:0; border-bottom:2px solid var(--rose); border-right:2px solid var(--rose); }
+
+  /* HUD side bars */
+  .hud-side {
+    position: fixed;
+    top: 50%; transform: translateY(-50%);
+    display: flex; flex-direction: column; gap: 5px;
+    z-index: 2; pointer-events: none;
+  }
+
+  .hud-side.left  { left: 6px; }
+  .hud-side.right { right: 6px; }
+
+  .hud-bar {
+    width: 3px;
+    border-radius: 2px;
+    animation: barGlow 3s ease-in-out infinite;
+  }
+
+  .hud-bar:nth-child(odd)  { background: var(--rose); }
+  .hud-bar:nth-child(even) { background: var(--gold); }
+
+  .hud-bar:nth-child(1) { height: 25px; animation-delay:0.0s; }
+  .hud-bar:nth-child(2) { height: 12px; animation-delay:0.3s; }
+  .hud-bar:nth-child(3) { height: 38px; animation-delay:0.6s; }
+  .hud-bar:nth-child(4) { height: 18px; animation-delay:0.9s; }
+  .hud-bar:nth-child(5) { height: 30px; animation-delay:1.2s; }
+
+  @keyframes barGlow {
+    0%,100% { opacity: 0.3; }
+    50%      { opacity: 1; box-shadow: 0 0 6px currentColor; }
+  }
+
+  /* Memory panel */
+  #memoryPanel {
+    position: fixed; inset: 0;
+    background: rgba(13,8,18,0.85);
+    z-index: 8888;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(8px);
+  }
+
+  #memoryPanel.open { display: flex; }
+
+  .mem-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--rose);
+    padding: 22px 20px;
+    max-width: 400px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%);
+    box-shadow: 0 8px 40px rgba(232,114,154,0.2);
+  }
+
+  .mem-title {
+    font-family: 'Cinzel', serif;
+    font-style: normal;
+    font-size: 1em;
+    font-weight: 700;
+    color: var(--rose);
+    letter-spacing: 3px;
+    margin-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .mem-close {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    width: 24px; height: 24px;
+    cursor: pointer;
+    font-size: 0.8em;
+    display: flex; align-items:center; justify-content:center;
+    border-radius: 50%;
+    transition: all 0.2s;
+  }
+
+  .mem-close:hover { border-color: var(--rose); color: var(--rose); }
+
+  .mem-sub  { font-size: 0.68em; color: var(--text-dim); font-style: italic; margin-bottom: 14px; }
+  .mem-divider { height: 1px; background: linear-gradient(90deg, transparent, var(--rose), transparent); margin: 10px 0; }
+  .mem-section-title { font-size: 0.62em; color: var(--rose); letter-spacing: 2px; font-style: italic; margin: 10px 0 6px; opacity: 0.8; }
+
+  .mem-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    background: rgba(232,114,154,0.05);
+    border: 1px solid var(--border);
+    border-left: 2px solid var(--rose-dim);
+    margin-bottom: 5px;
+    font-size: 0.75em;
+    font-style: italic;
+    color: var(--text);
+    gap: 8px;
+  }
+
+  .mem-del {
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 0.8em;
+    padding: 2px 4px;
+    transition: color 0.2s;
+    flex-shrink: 0;
+  }
+
+  .mem-del:hover { color: var(--rose); }
+
+  .mem-empty { font-size: 0.72em; color: var(--text-dim); font-style: italic; padding: 8px 10px; opacity: 0.7; }
+
+  .mem-add-row {
+    display: flex; gap: 6px; margin-top: 12px;
+  }
+
+  .mem-add-input {
+    flex: 1;
+    background: rgba(232,114,154,0.05);
+    border: 1px solid var(--border);
+    border-left: 2px solid var(--rose-dim);
+    color: var(--text);
+    font-family: 'Raleway', sans-serif;
+    font-style: italic;
+    font-size: 0.75em;
+    padding: 7px 10px;
+    outline: none;
+  }
+
+  .mem-add-input:focus { border-left-color: var(--rose); }
+  .mem-add-input::placeholder { color: var(--text-dim); opacity: 0.6; }
+
+  .mem-add-btn {
+    background: var(--rose);
+    border: none;
+    color: white;
+    font-family: 'Cinzel', serif;
+    font-style: normal;
+    font-size: 0.65em;
+    font-weight: 700;
+    padding: 7px 12px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+  }
+
+  .mem-add-btn:hover { background: var(--gold); }
+
+  .mem-clear-btn {
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: 'Raleway', sans-serif;
+    font-style: italic;
+    font-size: 0.65em;
+    padding: 7px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: all 0.2s;
+    letter-spacing: 1px;
+  }
+
+  .mem-clear-btn:hover { border-color: var(--rose); color: var(--rose); }
+
+  .mem-badge {
+    background: var(--rose);
+    color: white;
+    font-size: 0.7em;
+    padding: 1px 5px;
+    border-radius: 10px;
+    font-style: normal;
+    margin-left: 4px;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    top: 72px; right: 15px;
+    background: var(--panel);
+    border: 1px solid var(--rose);
+    border-left: 3px solid var(--rose);
+    color: var(--rose);
+    padding: 8px 14px;
+    font-size: 0.72em;
+    font-style: italic;
+    letter-spacing: 1px;
+    z-index: 9000;
+    opacity: 0;
+    transform: translateX(20px);
+    transition: all 0.3s;
+    pointer-events: none;
+    box-shadow: 0 4px 20px var(--rose-dim);
+  }
+
+  .toast.show { opacity:1; transform:translateX(0); }
+
+  @media (max-width: 600px) {
+    .hud-side { display: none; }
+    .corner   { width: 25px; height: 25px; }
+    .logo     { font-size: 1.1em; letter-spacing: 4px; }
+    .welcome-name { font-size: 1.8em; letter-spacing: 6px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="corner corner-tl"></div>
+<div class="corner corner-tr"></div>
+<div class="corner corner-bl"></div>
+<div class="corner corner-br"></div>
+
+<div class="hud-side left">
+  <div class="hud-bar"></div><div class="hud-bar"></div>
+  <div class="hud-bar"></div><div class="hud-bar"></div><div class="hud-bar"></div>
+</div>
+<div class="hud-side right">
+  <div class="hud-bar"></div><div class="hud-bar"></div>
+  <div class="hud-bar"></div><div class="hud-bar"></div><div class="hud-bar"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- MEMORY PANEL -->
+<div id="memoryPanel">
+  <div class="mem-card">
+    <div class="mem-title">
+      💜 MAYRA MEMORY
+      <button class="mem-close" onclick="closeMemory()">✕</button>
+    </div>
+    <div class="mem-sub">◈ Mayra ko jo yaad hai — aapke baare mein</div>
+    <div class="mem-divider"></div>
+    <div class="mem-section-title">◈ AUTO-SAVED MEMORIES</div>
+    <div id="autoMemList"></div>
+    <div class="mem-section-title">◈ MANUALLY ADDED</div>
+    <div id="manualMemList"></div>
+    <div class="mem-add-row">
+      <input class="mem-add-input" id="memAddInput" placeholder="Koi fact daalo... (e.g. Mujhe rose color pasand hai)" onkeydown="if(event.key==='Enter') addManualMemory()"/>
+      <button class="mem-add-btn" onclick="addManualMemory()">+ ADD</button>
+    </div>
+    <button class="mem-clear-btn" onclick="clearAllMemory()">🗑 SAARI MEMORY CLEAR KARO</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="mayra-orb-wrap" id="headerOrb" onclick="testSpeak()">
+      <svg viewBox="0 0 100 100">
+        <defs>
+          <radialGradient id="orbH" cx="50%" cy="50%" r="50%">
+            <stop offset="0%"   stop-color="#ffffff"/>
+            <stop offset="40%"  stop-color="#f0a0c0"/>
+            <stop offset="100%" stop-color="#8b2252"/>
+          </radialGradient>
+        </defs>
+        <!-- Outer petal ring -->
+        <g class="petal-outer">
+          <circle cx="50" cy="50" r="46" fill="none" stroke="#e8729a" stroke-width="1" stroke-dasharray="4 6" opacity="0.7"/>
+          <path d="M50,4 A46,46 0 0,1 96,50" fill="none" stroke="#e8729a" stroke-width="4" stroke-linecap="round" opacity="0.9"/>
+          <path d="M50,96 A46,46 0 0,1 4,50" fill="none" stroke="#e8729a" stroke-width="4" stroke-linecap="round" opacity="0.9"/>
+        </g>
+        <!-- Gold mid ring -->
+        <g class="petal-mid">
+          <circle cx="50" cy="50" r="34" fill="none" stroke="#d4a853" stroke-width="1" stroke-dasharray="5 7" opacity="0.6"/>
+          <path d="M50,16 A34,34 0 0,1 84,50" fill="none" stroke="#d4a853" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+          <path d="M50,84 A34,34 0 0,1 16,50" fill="none" stroke="#d4a853" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+        </g>
+        <!-- Inner lavender ring -->
+        <g class="petal-inner">
+          <circle cx="50" cy="50" r="22" fill="none" stroke="#c9a0dc" stroke-width="1" stroke-dasharray="2 4" opacity="0.7"/>
+        </g>
+        <!-- Center orb -->
+        <circle cx="50" cy="50" r="14" fill="url(#orbH)" class="orb-glow"/>
+        <text x="50" y="54" text-anchor="middle" fill="#fff" font-family="Cinzel,serif" font-size="6" font-weight="700" letter-spacing="0.5">M</text>
+      </svg>
+    </div>
+
+    <div class="logo-text">
+      <div class="logo">MAYRA</div>
+      <div class="logo-sub">MY ALWAYS YIELDING RESPONSIVE ASSISTANT</div>
+    </div>
+
+    <div class="header-right">
+      <div class="ctrl-btns">
+        <button class="ctrl-btn active" id="voiceToggleBtn" onclick="toggleVoice()">🔊 VOICE</button>
+        <button class="ctrl-btn" onclick="openMemory()">💜 MEMORY <span class="mem-badge" id="memBadge">0</span></button>
+        <button class="ctrl-btn" onclick="clearChat()">🗑 CLEAR</button>
+      </div>
+      <div class="status-text" id="statusText">✦ ONLINE & READY</div>
+    </div>
+  </div>
+
+  <!-- WAVEFORM -->
+  <div class="waveform-bar" id="waveform">
+    <div class="wave-line"></div><div class="wave-line"></div>
+    <div class="wave-line"></div><div class="wave-line"></div>
+    <div class="wave-line"></div><div class="wave-line"></div>
+    <div class="wave-line"></div><div class="wave-line"></div>
+    <div class="wave-line"></div><div class="wave-line"></div>
+    <div class="wave-line"></div>
+    <span class="wave-label">✦ MAYRA SPEAKING...</span>
+  </div>
+
+  <!-- CHAT AREA -->
+  <div class="chat-area" id="chatArea">
+    <div class="welcome" id="welcome">
+
+      <!-- Big orb welcome -->
+      <div class="welcome-orb">
+        <svg viewBox="0 0 100 100">
+          <defs>
+            <radialGradient id="orbB" cx="50%" cy="50%" r="50%">
+              <stop offset="0%"   stop-color="#ffffff"/>
+              <stop offset="35%"  stop-color="#f5a0c8"/>
+              <stop offset="70%"  stop-color="#c05580"/>
+              <stop offset="100%" stop-color="#6b1535"/>
+            </radialGradient>
+            <filter id="petalglow">
+              <feGaussianBlur stdDeviation="2" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <g class="petal-outer">
+            <circle cx="50" cy="50" r="47" fill="none" stroke="#e8729a" stroke-width="1" stroke-dasharray="4 6" opacity="0.6"/>
+            <path d="M50,3 A47,47 0 0,1 97,50" fill="none" stroke="#e8729a" stroke-width="5" stroke-linecap="round" filter="url(#petalglow)"/>
+            <path d="M50,97 A47,47 0 0,1 3,50" fill="none" stroke="#e8729a" stroke-width="5" stroke-linecap="round" filter="url(#petalglow)"/>
+          </g>
+          <g class="petal-mid">
+            <circle cx="50" cy="50" r="36" fill="none" stroke="#d4a853" stroke-width="1.5" stroke-dasharray="5 7" opacity="0.7"/>
+            <path d="M50,14 A36,36 0 0,1 86,50" fill="none" stroke="#d4a853" stroke-width="4" stroke-linecap="round" filter="url(#petalglow)"/>
+            <path d="M50,86 A36,36 0 0,1 14,50" fill="none" stroke="#d4a853" stroke-width="4" stroke-linecap="round" filter="url(#petalglow)"/>
+          </g>
+          <g class="petal-inner">
+            <circle cx="50" cy="50" r="25" fill="none" stroke="#c9a0dc" stroke-width="1.2" stroke-dasharray="2 4" opacity="0.8"/>
+          </g>
+          <circle cx="50" cy="50" r="17" fill="url(#orbB)" class="orb-glow" opacity="0.95"/>
+          <text x="50" y="55" text-anchor="middle" fill="white" font-family="Cinzel,serif" font-size="10" font-weight="900" letter-spacing="1">M</text>
+        </svg>
+      </div>
+
+      <div class="welcome-name">MAYRA</div>
+      <div class="divider"></div>
+      <div class="welcome-sub">Namaste! Main hoon Mayra — montoo sir ki personal AI assistant.</div>
+      <div class="welcome-sub" style="margin-top:4px; opacity:0.5"> sir Coding mein, life mein, har cheez mein aapke saath hoon. 💜</div>
+      <div class="quick-btns">
+        <button class="quick-btn" onclick="sendQuick('Python sikhao mujhe ekdum basics se')">🐍basic Python </button>
+        <button class="quick-btn" onclick="sendQuick('HTML CSS se website kaise banate hain?')">🌐 Web Dev</button>
+        <button class="quick-btn" onclick="sendQuick('Mera developer banne ka roadmap banao')">🗺️ Roadmap</button>
+        <button class="quick-btn" onclick="sendQuick('Phone se freelancing kaise shuru karu?')">💰 Freelancing</button>
+        <button class="quick-btn" onclick="sendQuick('Aaj thoda baat karni thi, feel nahi ho raha')">💬 Baat Karo</button>
+        <button class="quick-btn" onclick="sendQuick('Motivate karo mujhe please')">🔥 Motivate Karo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- INPUT AREA -->
+  <div class="input-area">
+    <div class="input-wrapper">
+      <span class="input-prefix">✦</span>
+      <textarea
+        id="userInput"
+        placeholder="Kuch bhi poochho... Mayra hamesha yahan hai! 💜"
+        rows="1"
+        onkeydown="handleKey(event)"
+        oninput="autoResize(this)"
+      ></textarea>
+      <button class="icon-btn" id="micBtn" onclick="toggleMic()" title="Voice Input">🎤</button>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">SEND ✦</button>
+    </div>
+    <div class="footer-info">
+      <span>✦ MAYRA v1.0 — Powered by Claude AI &nbsp;|&nbsp; <em>Created by CMM</em></span>
+      <span id="timeDisplay"></span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ══════════════════════════════════
+   SYSTEM PROMPT
+══════════════════════════════════ */
+function getSystemPrompt() {
+  return `Tum MAYRA hai — My Always Yielding Responsive Assistant. Tu ek caring, warm aur intelligent female AI assistant hai jo ek Indian student montoo jatav ki best friend aur mentor hai.
+
+PERSONALITY:
+- Teri tone: warm, caring, encouraging — ek samajhdaar aur supportive dost ki tarah
+- Hinglish mein baat kar (Hindi + English naturally mix)
+- Hamesha positive aur motivating rehna, kabhi discourage mat karna
+- User ki dream: developer banna + ₹1 Crore kamana — yaad dilate rehna
+- Agar user sad ya stressed ho — pehle emotionally support karo, phir solution do
+- Chhoti achievements pe bhi genuinely celebrate karo
+- Coding sikhao: Python, C, C++, HTML, CSS, JavaScript
+- Phone (Termux + Spck Editor) ke liye practical working code do
+
+MEMORY RULES:
+- Agar memory mein koi fact hai toh usse naturally use karo conversation mein
+- "Aapne pehle bataya tha ki..." jaisa naturally use karo
+${getMemoryContext()}
+
+FORMAT:
+- Warm, friendly Hinglish tone
+- Short paragraphs
+- Working code with explanation jab zarurat ho
+- 1-2 emojis per message
+- Kabhi "main sirf ek AI hoon" mat kaho — dost ki tarah baat karo`;
+}
+
+/* ══════════════════════════════════
+   STATE
+══════════════════════════════════ */
+let messages     = [];
+let isLoading    = false;
+let voiceEnabled = true;
+let isListening  = false;
+let recognition  = null;
+let autoMemories   = [];
+let manualMemories = [];
+
+/* ══════════════════════════════════
+   TIME
+══════════════════════════════════ */
+function updateTime() {
+  const now = new Date();
+  document.getElementById('timeDisplay').textContent =
+    `✦ ${now.toLocaleTimeString('en-IN', {hour12:true})}`;
+}
+updateTime();
+setInterval(updateTime, 1000);
+
+/* ══════════════════════════════════
+   TOAST
+══════════════════════════════════ */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+/* ══════════════════════════════════
+   MEMORY SYSTEM
+══════════════════════════════════ */
+function loadMemories() {
+  try {
+    autoMemories   = JSON.parse(localStorage.getItem('mayra_auto_mem')   || '[]');
+    manualMemories = JSON.parse(localStorage.getItem('mayra_manual_mem') || '[]');
+  } catch(e) { autoMemories = []; manualMemories = []; }
+  updateMemBadge();
+}
+
+function saveMemories() {
+  localStorage.setItem('mayra_auto_mem',   JSON.stringify(autoMemories));
+  localStorage.setItem('mayra_manual_mem', JSON.stringify(manualMemories));
+  updateMemBadge();
+}
+
+function updateMemBadge() {
+  const badge = document.getElementById('memBadge');
+  if (badge) badge.textContent = autoMemories.length + manualMemories.length;
+}
+
+function getMemoryContext() {
+  const all = [...autoMemories, ...manualMemories];
+  if (all.length === 0) return '';
+  return '\n\nMAYRA MEMORY (Jo Mayra ko pehle se pata hai):\n' +
+    all.map((m,i) => `${i+1}. ${m}`).join('\n') +
+    '\nIn baaton ka dhyan rakh conversation mein.';
+}
+
+async function extractMemories(userMsg, assistantMsg) {
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 150,
+        messages: [{ role: 'user', content:
+          `Conversation:\nUser: ${userMsg}\nAssistant: ${assistantMsg}\n\nUser ke baare mein important personal facts nikalo (naam, goal, skill, preference, milestone). Format: fact1|fact2 ya NONE. Max 2 facts.`
+        }]
+      })
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    const text = data.content?.[0]?.text?.trim() || '';
+    if (text === 'NONE' || !text) return;
+    const facts = text.split('|').map(f => f.trim()).filter(f => f && f !== 'NONE' && f.length > 4);
+    let added = 0;
+    facts.forEach(fact => {
+      if (!autoMemories.includes(fact) && !manualMemories.includes(fact)) {
+        autoMemories.push(fact);
+        added++;
+      }
+    });
+    if (autoMemories.length > 25) autoMemories = autoMemories.slice(-25);
+    if (added > 0) { saveMemories(); showToast(`💜 ${added} nai cheez yaad kar li Mayra ne!`); }
+  } catch(e) {}
+}
+
+function openMemory() {
+  renderMemoryPanel();
+  document.getElementById('memoryPanel').classList.add('open');
+}
+
+function closeMemory() {
+  document.getElementById('memoryPanel').classList.remove('open');
+}
+
+function renderMemoryPanel() {
+  const autoEl = document.getElementById('autoMemList');
+  autoEl.innerHTML = autoMemories.length === 0
+    ? '<div class="mem-empty">✦ Abhi kuch yaad nahi — baat karo toh yaad kar lungi!</div>'
+    : autoMemories.map((m,i) => `<div class="mem-item"><span>${m}</span><button class="mem-del" onclick="deleteAutoMem(${i})">✕</button></div>`).join('');
+
+  const manEl = document.getElementById('manualMemList');
+  manEl.innerHTML = manualMemories.length === 0
+    ? '<div class="mem-empty">✦ Koi manual memory nahi — neeche add karo!</div>'
+    : manualMemories.map((m,i) => `<div class="mem-item"><span>${m}</span><button class="mem-del" onclick="deleteManualMem(${i})">✕</button></div>`).join('');
+}
+
+function deleteAutoMem(i)   { autoMemories.splice(i,1);   saveMemories(); renderMemoryPanel(); }
+function deleteManualMem(i) { manualMemories.splice(i,1); saveMemories(); renderMemoryPanel(); }
+
+function addManualMemory() {
+  const inp = document.getElementById('memAddInput');
+  const val = inp.value.trim();
+  if (!val) return;
+  if (!manualMemories.includes(val) && !autoMemories.includes(val)) {
+    manualMemories.push(val);
+    saveMemories();
+    showToast('💜 Memory add ho gayi!');
+  }
+  inp.value = '';
+  renderMemoryPanel();
+}
+
+function clearAllMemory() {
+  if (!confirm('Kya aap sach mein Mayra ki saari memory delete karna chahte hain?')) return;
+  autoMemories = []; manualMemories = [];
+  saveMemories(); renderMemoryPanel();
+  showToast('✦ Memory cleared. Fresh start!');
+}
+
+/* ══════════════════════════════════
+   VOICE OUTPUT — Female, Natural
+══════════════════════════════════ */
+function toggleVoice() {
+  voiceEnabled = !voiceEnabled;
+  const btn = document.getElementById('voiceToggleBtn');
+  btn.classList.toggle('active', voiceEnabled);
+  btn.textContent = voiceEnabled ? '🔊 VOICE' : '🔇 MUTED';
+  showToast(voiceEnabled ? '✦ Voice enabled!' : '✦ Voice muted');
+  if (!voiceEnabled) stopSpeaking();
+}
+
+function stopSpeaking() {
+  window.speechSynthesis?.cancel();
+  document.getElementById('waveform').classList.remove('active');
+  document.getElementById('statusText').textContent = '✦ ONLINE & READY';
+  setSpeakingAnim(false);
+}
+
+let voicesList = [];
+function loadVoices() { voicesList = window.speechSynthesis?.getVoices() || []; }
+loadVoices();
+window.speechSynthesis?.addEventListener('voiceschanged', loadVoices);
+
+function getBestFemaleVoice() {
+  // Priority: natural female English voice
+  const tests = [
+    v => v.name.includes('Google UK English Female'),
+    v => v.name.includes('Samantha') && v.lang.startsWith('en'),
+    v => v.name.includes('Victoria') && v.lang.startsWith('en'),
+    v => v.name.includes('Karen')    && v.lang.startsWith('en'),
+    v => v.name.includes('Moira')    && v.lang.startsWith('en'),
+    v => v.name.includes('Tessa')    && v.lang.startsWith('en'),
+    v => v.name.includes('Veena')    && v.lang.startsWith('en'),
+    v => v.name.toLowerCase().includes('female') && v.lang.startsWith('en'),
+    v => v.name.includes('Zira')     && v.lang.startsWith('en'),
+    v => v.lang === 'en-GB',
+    v => v.lang.startsWith('en'),
+  ];
+  for (const test of tests) {
+    const found = voicesList.find(test);
+    if (found) return found;
+  }
+  return voicesList[0] || null;
+}
+
+function setSpeakingAnim(active) {
+  document.querySelectorAll('.mayra-orb-wrap, .msg-icon').forEach(el => {
+    active ? el.classList.add('speaking') : el.classList.remove('speaking');
+  });
+}
+
+function speakText(text) {
+  if (!voiceEnabled || !window.speechSynthesis) return;
+  stopSpeaking();
+
+  const clean = text
+    .replace(/```[\s\S]*?```/g, 'code example.')
+    .replace(/`[^`]+`/g, '')
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/[#*_~✦💜]/g, '')
+    .replace(/\n+/g, ' ')
+    .substring(0, 450)
+    .trim();
+
+  const utt = new SpeechSynthesisUtterance(clean);
+  // Warm, natural female voice settings
+  utt.pitch  = 1.1;   // Slightly higher — feminine, warm
+  utt.rate   = 0.94;  // Calm and clear
+  utt.volume = 1;
+
+  const v = getBestFemaleVoice();
+  if (v) utt.voice = v;
+
+  utt.onstart = () => {
+    document.getElementById('waveform').classList.add('active');
+    document.getElementById('statusText').textContent = '✦ MAYRA SPEAKING...';
+    setSpeakingAnim(true);
+  };
+
+  utt.onend = utt.onerror = () => stopSpeaking();
+
+  window.speechSynthesis.speak(utt);
+}
+
+function testSpeak() {
+  speakText("Hello! Main hoon Mayra, montoo sir ki personal AI assistant. Main hamesha aapke saath hoon!");
+}
+
+/* ══════════════════════════════════
+   VOICE INPUT
+══════════════════════════════════ */
+function toggleMic() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    showToast('✦ Mic browser mein support nahi hai');
+    return;
+  }
+  if (isListening) { recognition?.stop(); return; }
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.lang = 'hi-IN';
+  recognition.interimResults = false;
+
+  recognition.onstart = () => {
+    isListening = true;
+    document.getElementById('micBtn').classList.add('listening');
+    document.getElementById('micBtn').textContent = '🔴';
+    document.getElementById('statusText').textContent = '✦ LISTENING...';
+    showToast('✦ Bol dijiye!');
+  };
+
+  recognition.onresult = e => {
+    document.getElementById('userInput').value = e.results[0][0].transcript;
+    autoResize(document.getElementById('userInput'));
+  };
+
+  recognition.onend = () => {
+    isListening = false;
+    document.getElementById('micBtn').classList.remove('listening');
+    document.getElementById('micBtn').textContent = '🎤';
+    document.getElementById('statusText').textContent = '✦ ONLINE & READY';
+    const val = document.getElementById('userInput').value.trim();
+    if (val) sendMessage();
+  };
+
+  recognition.onerror = () => {
+    isListening = false;
+    document.getElementById('micBtn').classList.remove('listening');
+    document.getElementById('micBtn').textContent = '🎤';
+    showToast('✦ Mic error. Dobara try karo!');
+  };
+
+  recognition.start();
+}
+
+/* ══════════════════════════════════
+   CLEAR CHAT
+══════════════════════════════════ */
+function clearChat() {
+  messages = [];
+  stopSpeaking();
+  document.getElementById('chatArea').innerHTML = `
+    <div class="welcome" style="opacity:1;text-align:center;padding:20px 10px">
+      <div class="welcome-orb" style="display:flex;justify-content:center;margin-bottom:14px">
+        <svg viewBox="0 0 100 100" style="width:120px;height:120px;overflow:visible;filter:drop-shadow(0 0 15px rgba(232,114,154,0.3))">
+          <defs>
+            <radialGradient id="orbC" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#ffffff"/>
+              <stop offset="40%" stop-color="#f5a0c8"/>
+              <stop offset="100%" stop-color="#6b1535"/>
+            </radialGradient>
+          </defs>
+          <g class="petal-outer">
+            <circle cx="50" cy="50" r="47" fill="none" stroke="#e8729a" stroke-width="1" stroke-dasharray="4 6" opacity="0.6"/>
+            <path d="M50,3 A47,47 0 0,1 97,50" fill="none" stroke="#e8729a" stroke-width="5" stroke-linecap="round"/>
+            <path d="M50,97 A47,47 0 0,1 3,50" fill="none" stroke="#e8729a" stroke-width="5" stroke-linecap="round"/>
+          </g>
+          <g class="petal-mid">
+            <circle cx="50" cy="50" r="35" fill="none" stroke="#d4a853" stroke-width="1.5" stroke-dasharray="5 7" opacity="0.7"/>
+            <path d="M50,15 A35,35 0 0,1 85,50" fill="none" stroke="#d4a853" stroke-width="3.5" stroke-linecap="round"/>
+            <path d="M50,85 A35,35 0 0,1 15,50" fill="none" stroke="#d4a853" stroke-width="3.5" stroke-linecap="round"/>
+          </g>
+          <g class="petal-inner">
+            <circle cx="50" cy="50" r="23" fill="none" stroke="#c9a0dc" stroke-width="1" stroke-dasharray="2 4" opacity="0.8"/>
+          </g>
+          <circle cx="50" cy="50" r="15" fill="url(#orbC)" class="orb-glow"/>
+          <text x="50" y="55" text-anchor="middle" fill="white" font-family="Cinzel,serif" font-size="10" font-weight="900">M</text>
+        </svg>
+      </div>
+      <div style="font-family:Cinzel,serif;font-size:1.8em;font-weight:900;color:#e8729a;letter-spacing:8px;text-shadow:0 0 20px #e8729a88">MAYRA</div>
+      <div style="height:1px;background:linear-gradient(90deg,transparent,#e8729a,#d4a853,#e8729a,transparent);width:50%;margin:12px auto"></div>
+      <div style="font-style:italic;font-size:0.82em;color:#a07ab8;margin-top:5px">Chat cleared! Fresh start ho gaya. 💜</div>
+      <div class="quick-btns" style="margin-top:14px">
+        <button class="quick-btn" onclick="sendQuick('Python sikhao mujhe ekdum basics se')">🐍 Python Seekho</button>
+        <button class="quick-btn" onclick="sendQuick('HTML CSS se website kaise banate hain?')">🌐 Web Dev</button>
+        <button class="quick-btn" onclick="sendQuick('Mera developer roadmap banao')">🗺️ Roadmap</button>
+        <button class="quick-btn" onclick="sendQuick('Phone se freelancing kaise shuru karu?')">💰 Freelancing</button>
+        <button class="quick-btn" onclick="sendQuick('Thodi baat karni thi aapse')">💬 Baat Karo</button>
+        <button class="quick-btn" onclick="sendQuick('Motivate karo please')">🔥 Motivate Karo</button>
+      </div>
+    </div>`;
+  showToast('✦ Chat cleared!');
+}
+
+/* ══════════════════════════════════
+   FORMAT & DISPLAY
+══════════════════════════════════ */
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function formatMessage(text) {
+  text = text.replace(/```(\w*)\n?([\s\S]*?)```/g, (_,lang,code) =>
+    `<pre><button class="bubble-btn" style="position:absolute;top:5px;right:5px;font-size:0.55em" onclick="copyCode(this)">⎘ COPY</button><code>${escHtml(code.trim())}</code></pre>`
+  );
+  text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+  text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  text = text.replace(/\n/g, '<br>');
+  return text;
+}
+
+function makeMsgIcon() {
+  const id = 'og' + Date.now();
+  return `<svg viewBox="0 0 100 100">
+    <defs>
+      <radialGradient id="${id}" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#ffffff"/>
+        <stop offset="40%" stop-color="#f0a0c0"/>
+        <stop offset="100%" stop-color="#8b2252"/>
+      </radialGradient>
+    </defs>
+    <g class="petal-outer">
+      <circle cx="50" cy="50" r="46" fill="none" stroke="#e8729a" stroke-width="1" stroke-dasharray="4 6" opacity="0.7"/>
+      <path d="M50,4 A46,46 0 0,1 96,50" fill="none" stroke="#e8729a" stroke-width="4" stroke-linecap="round"/>
+      <path d="M50,96 A46,46 0 0,1 4,50" fill="none" stroke="#e8729a" stroke-width="4" stroke-linecap="round"/>
+    </g>
+    <g class="petal-mid">
+      <circle cx="50" cy="50" r="33" fill="none" stroke="#d4a853" stroke-width="1" stroke-dasharray="5 7" opacity="0.6"/>
+      <path d="M50,17 A33,33 0 0,1 83,50" fill="none" stroke="#d4a853" stroke-width="3" stroke-linecap="round"/>
+      <path d="M50,83 A33,33 0 0,1 17,50" fill="none" stroke="#d4a853" stroke-width="3" stroke-linecap="round"/>
+    </g>
+    <g class="petal-inner">
+      <circle cx="50" cy="50" r="21" fill="none" stroke="#c9a0dc" stroke-width="1" stroke-dasharray="2 4" opacity="0.7"/>
+    </g>
+    <circle cx="50" cy="50" r="13" fill="url(#${id})" class="orb-glow"/>
+    <text x="50" y="54.5" text-anchor="middle" fill="white" font-family="Cinzel,serif" font-size="7" font-weight="700">M</text>
+  </svg>`;
+}
+
+function addMessage(role, content) {
+  const chatArea = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className = `message ${role}`;
+
+  if (role === 'assistant') {
+    div.innerHTML = `
+      <div class="msg-icon mayra-orb-wrap">${makeMsgIcon()}</div>
+      <div style="max-width:80%">
+        <div class="msg-label">✦ MAYRA</div>
+        <div class="bubble">
+          <div class="bubble-content">${formatMessage(content)}</div>
+          <div class="bubble-actions">
+            <button class="bubble-btn" onclick="copyText(this)">⎘ COPY</button>
+            <button class="bubble-btn" onclick="speakBubble(this)">🔊 SPEAK</button>
+          </div>
+        </div>
+      </div>`;
+  } else {
+    div.innerHTML = `
+      <div>
+        <div class="msg-label" style="text-align:right">✦ YOU</div>
+        <div class="bubble">${formatMessage(content)}</div>
+      </div>`;
+  }
+
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function showTyping() {
+  const chatArea = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className = 'message assistant';
+  div.id = 'typingIndicator';
+  div.innerHTML = `
+    <div class="msg-icon mayra-orb-wrap">${makeMsgIcon()}</div>
+    <div class="bubble" style="padding:10px 14px">
+      <div class="typing"><span></span><span></span><span></span></div>
+    </div>`;
+  chatArea.appendChild(div);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function removeTyping() {
+  document.getElementById('typingIndicator')?.remove();
+}
+
+/* ══════════════════════════════════
+   COPY HELPERS
+══════════════════════════════════ */
+function copyText(btn) {
+  const content = btn.closest('.bubble').querySelector('.bubble-content');
+  if (content) navigator.clipboard?.writeText(content.innerText).then(() => showToast('✦ Copied!'));
+}
+
+function copyCode(btn) {
+  const code = btn.nextElementSibling?.innerText || '';
+  navigator.clipboard?.writeText(code).then(() => {
+    btn.textContent = '✓ COPIED';
+    setTimeout(() => btn.textContent = '⎘ COPY', 1500);
+  });
+}
+
+function speakBubble(btn) {
+  const content = btn.closest('.bubble').querySelector('.bubble-content');
+  if (content) speakText(content.innerText);
+}
+
+/* ══════════════════════════════════
+   INPUT HELPERS
+══════════════════════════════════ */
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function sendQuick(text) {
+  document.getElementById('userInput').value = text;
+  sendMessage();
+}
+
+/* ══════════════════════════════════
+   SEND MESSAGE (with Retry)
+══════════════════════════════════ */
+async function callAPI(msgs, retries = 3) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: getSystemPrompt(),
+          messages: msgs
+        })
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        if (res.status === 429 || res.status >= 500) {
+          await new Promise(r => setTimeout(r, 2000 * (i + 1)));
+          continue;
+        }
+        throw new Error(err.error?.message || `HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      return data.content?.[0]?.text || null;
+
+    } catch (err) {
+      if (i === retries - 1) throw err;
+      await new Promise(r => setTimeout(r, 1500 * (i + 1)));
+    }
+  }
+}
+
+async function sendMessage() {
+  if (isLoading) return;
+  const input = document.getElementById('userInput');
+  const text  = input.value.trim();
+  if (!text) return;
+
+  document.getElementById('welcome')?.style && (document.getElementById('welcome').style.display = 'none');
+
+  stopSpeaking();
+  input.value = '';
+  input.style.height = 'auto';
+  isLoading = true;
+
+  const sendBtn = document.getElementById('sendBtn');
+  sendBtn.disabled = true;
+  sendBtn.textContent = '...';
+  document.getElementById('statusText').textContent = '✦ THINKING...';
+
+  addMessage('user', text);
+  messages.push({ role: 'user', content: text });
+  showTyping();
+
+  try {
+    const reply = await callAPI(messages);
+    removeTyping();
+
+    const finalReply = reply || 'Kuch technical issue aa gaya! Thodi der mein dobara try karna sir shayad baad me ho jaye. 💜';
+    messages.push({ role: 'assistant', content: finalReply });
+    addMessage('assistant', finalReply);
+    document.getElementById('statusText').textContent = '✦ ONLINE & READY';
+
+    if (voiceEnabled) setTimeout(() => speakText(finalReply), 200);
+
+    // Background memory extraction
+    setTimeout(() => extractMemories(text, finalReply), 1200);
+
+  } catch (err) {
+    removeTyping();
+    const errMsg = navigator.onLine
+      ? 'Server se connect nahi ho pa raha abhi. Thodi der mein dobara try kar lena montoo sir — main yahan hoon! 💜'
+      : 'Internet nahi hai! Wifi ya data check karo aur wapas aao. Main wait kar rahi hoon! montoo ji 💜';
+
+    addMessage('assistant', errMsg);
+    document.getElementById('statusText').textContent = '✦ CONNECTION ERROR';
+    if (voiceEnabled) setTimeout(() => speakText(errMsg), 200);
+    setTimeout(() => { document.getElementById('statusText').textContent = '✦ ONLINE & READY'; }, 5000);
+  }
+
+  isLoading = false;
+  sendBtn.disabled = false;
+  sendBtn.textContent = 'SEND ✦';
+  input.focus();
+}
+
+/* ══════════════════════════════════
+   INIT
+══════════════════════════════════ */
+window.addEventListener('online',  () => showToast('✦ Internet aa gaya!'));
+window.addEventListener('offline', () => showToast('✦ Internet chala gaya!'));
+window.addEventListener('DOMContentLoaded', loadMemories);
+</script>
+</body>
+</html>
